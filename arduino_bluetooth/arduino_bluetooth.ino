@@ -5,6 +5,7 @@ SoftwareSerial mySerial(10, 11); //TX, RX
 const int stopLed = 13;
 const int goLed = 12;
 const int throttleLed = 8;
+const int statusPin = 3;
 int mappedSpeed = 0;
 unsigned int btInputValue;
 
@@ -13,6 +14,7 @@ void setup() {
   pinMode(stopLed, OUTPUT);
   pinMode(throttleLed, OUTPUT);
   pinMode(goLed, OUTPUT);
+  pinMode(statusPin, INPUT);
   Serial.begin(9600);
   
   mySerial.begin(9600);
@@ -20,35 +22,35 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if (mySerial.available() >= 2) {
-    unsigned int btInputA = mySerial.read();
-    unsigned int btInputB = mySerial.read();
-    btInputValue = (btInputB * 256) + btInputA;
-    Serial.print(btInputValue);
-    Serial.print('\n');
-    
-    if (btInputValue == 2000) {
-      stopBoard();
-    }
-    else if (btInputValue >= 0 && btInputValue <= 255) {
-      mappedSpeed = map(btInputValue, 50, 255, 1000, 2000);
-      digitalWrite(throttleLed, HIGH);
-//      Serial.print(btInputValue);
-//      Serial.print("Acceleration Value: " + mappedSpeed);
-    }
 
-//    if (btInputValue == 1000) {
-//      digitalWrite(goLed, HIGH);
-//      Serial.print("Motor GO");
-//      delay(100);
-//    }
+  int statusValue = digitalRead(statusPin);
 
-    digitalWrite(stopLed, LOW);
-    digitalWrite(goLed, LOW);
-    digitalWrite(throttleLed, LOW);
+  if (statusValue == 0) {
+    // Bluetooth Disconnected - Stop Board
+    Serial.print("Status Pin: ");
+    Serial.print(statusValue);
+    Serial.print("\n");
+    stopBoard();
   }
   else {
-    // No Connection - figure out what to do here.
+    if (mySerial.available() >= 2) {
+      unsigned int btInputA = mySerial.read();
+      unsigned int btInputB = mySerial.read();
+      btInputValue = (btInputB * 256) + btInputA;
+      Serial.print(btInputValue);
+      Serial.print('\n');
+      
+      if (btInputValue == 2000) {
+        stopBoard();
+      }
+      else if (btInputValue >= 0 && btInputValue <= 255) {
+        mappedSpeed = map(btInputValue, 50, 255, 1000, 2000);
+        digitalWrite(throttleLed, HIGH);
+      }  
+      digitalWrite(stopLed, LOW);
+      digitalWrite(goLed, LOW);
+      digitalWrite(throttleLed, LOW);
+    }
   }
 }
 
@@ -107,7 +109,6 @@ void stopBoard() {
       Serial.print('\n');
     }       
   }
-
   digitalWrite(stopLed, LOW);
 }
 
